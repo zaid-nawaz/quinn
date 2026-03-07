@@ -20,6 +20,10 @@ console.log("course id is " ,resolvedParams.courseid , " and maxresult is ", vid
     `https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&part=snippet&maxResults=${videoCount}&playlistId=${resolvedParams.courseid}&key=${process.env.API_KEY}`
   );
 
+  const firstVideo = response.data.items[0];
+  const thumbnail = firstVideo.snippet.thumbnails.maxres?.url || "";
+  const title = firstVideo.snippet.channelTitle;
+
   async function createEntry() { //this is a server action
     "use server";
     if (!userId) return;
@@ -32,7 +36,9 @@ console.log("course id is " ,resolvedParams.courseid , " and maxresult is ", vid
       where: { playlistId: resolvedParams.courseid },
     });
 
-    if (!existingUser || !existingCourse) return;
+    
+
+    if (!existingCourse || !existingUser) return;
 
     const existing = await prisma.courseProgress.findUnique({
       where: {
@@ -57,9 +63,7 @@ console.log("course id is " ,resolvedParams.courseid , " and maxresult is ", vid
     });
   }
 
-  const firstVideo = response.data.items[0];
-  const thumbnail = firstVideo.snippet.thumbnails.maxres?.url || "";
-  const title = firstVideo.snippet.channelTitle;
+
 
   return (
     <div

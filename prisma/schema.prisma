@@ -24,6 +24,7 @@ model User {
   updatedAt   DateTime @updatedAt
 
   progress    CourseProgress[]
+  videoProgress VideoProgress[]
 }
 
 model Course {
@@ -35,6 +36,7 @@ model Course {
   createdAt      DateTime @default(now())
 
   progress       CourseProgress[]
+  videoProgress  VideoProgress[]
 }
 
 model CourseProgress {
@@ -48,4 +50,39 @@ model CourseProgress {
   course     Course   @relation(fields: [courseId], references: [id])
 
   @@unique([userId, courseId]) // each user only 1 progress row per course
+}
+
+enum questionStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+} 
+
+model Video {
+  videoid   String  @id
+  status    questionStatus @default(PROCESSING)
+  questions Question[]
+  videoProgress VideoProgress[]
+}
+
+model Question {
+  id          String @id  @default(cuid())
+  question    String
+  options     String[]
+  answer      String
+  videoId     String
+  video       Video  @relation(fields: [videoId], references: [videoid])
+}
+
+model VideoProgress {
+  id          String @id @default(cuid())
+  userId      String
+  videoId     String
+  courseId    String
+  completed   Boolean @default(false)
+  user        User @relation(fields: [userId], references: [id])
+  video       Video @relation(fields: [videoId], references: [videoid])
+  course      Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, videoId])
 }

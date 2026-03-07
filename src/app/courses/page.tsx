@@ -1,20 +1,8 @@
+import { prisma } from "@/lib/db";
 import axios from "axios";
 import Link from "next/link";
 
-let playlist_id = [
-  "PLu71SKxNbfoBGh_8p_NS-ZAh6v7HhYqHW",
-  "PLbtI3_MArDOkNtOan8BQkG6P8wf6pNVz-",
-  "PL4cUxeGkcC9gC88BEo9czgyS72A3doDeM",
-];
 
-let playlist_id_string = "";
-
-playlist_id.forEach((e) => {
-  playlist_id_string += e;
-  playlist_id_string += "&id=";
-});
-
-playlist_id_string = playlist_id_string.substring(0, playlist_id_string.length - 1);
 
 interface playlistItem {
   id: string;
@@ -30,6 +18,20 @@ interface playlistItem {
 }
 
 export default async function courses() {
+
+  const course_info = await prisma.course.findMany({
+      take : 10,
+      orderBy : {
+        createdAt : "desc"
+      },
+      select : {
+        playlistId :true
+      }
+  })
+
+  const playlist_id = course_info.map((course) => course.playlistId);
+  const playlist_id_string = playlist_id.join("&id=");
+
   const allPlaylistInfo = await axios.get(
     `https://youtube.googleapis.com/youtube/v3/playlists?part=contentDetails&part=snippet&id=${playlist_id_string}&key=${process.env.API_KEY}`
   );
