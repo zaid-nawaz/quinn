@@ -24,7 +24,7 @@ export const VideoPlayer = ({ videoid }: { videoid: string }) => {
         videoId: videoid,
         playerVars: {
           controls: 1, // show default YouTube controls
-          modestbranding: 1,
+          modestbranding: 0,
           rel: 0,
           showinfo: 0,
         },
