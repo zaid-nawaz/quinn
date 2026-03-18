@@ -17,7 +17,7 @@ interface playlistItem {
   };
 }
 
-export default async function courses() {
+export default async function Courses() {
 
   const course_info = await prisma.course.findMany({
       take : 10,
