@@ -15,7 +15,7 @@ gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 app = FastAPI()
 
 class VideoRequest(BaseModel):
-    transcript_text: str
+    video_id: str
 
 class MCQ(BaseModel):
     question: str
