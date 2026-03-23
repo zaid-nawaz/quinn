@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel 
 from typing import List
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import json
 import yt_dlp
 import requests
+import httpx
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
@@ -28,49 +29,19 @@ class MCQResponse(BaseModel):
     mcqs: List[MCQ]
 
 def get_transcript(video_id: str) -> str:
-    url = f"https://www.youtube.com/watch?v={video_id}"
-
-    ydl_opts = {
-        "skip_download": True,
-        "writesubtitles": True,
-        "writeautomaticsub": True,
-        "subtitlesformat": "json3",
-        "quiet": True,
-    }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-
-    # Try manual subtitles first, then auto captions
-    subtitles = info.get("subtitles") or info.get("automatic_captions")
-
-    if not subtitles:
-        raise Exception("No subtitles available")
-
-    # Prefer English, fallback to Hindi or first available
-    lang = None
-    for l in ["en", "hi"]:
-        if l in subtitles:
-            lang = l
-            break
-
-    if not lang:
-        lang = list(subtitles.keys())[0]
-
-    subtitle_url = subtitles[lang][0]["url"]
-
-    # Fetch subtitle JSON
-    response = requests.get(subtitle_url)
-    data = response.json()
-
-    # Extract text
-    text = " ".join(
-        seg.get("utf8", "")
-        for event in data.get("events", [])
-        for seg in event.get("segs", [])
+    SUPADATA_API_KEY = os.environ.get("SUPADATA_API_KEY")
+    
+    response = httpx.get(
+        "https://api.supadata.ai/v1/youtube/transcript",
+        params={"videoId": video_id, "text": True},
+        headers={"x-api-key": SUPADATA_API_KEY}
     )
-
-    return text
+    
+    if response.status_code != 200:
+        raise Exception(f"Supadata error: {response.status_code} - {response.text}")
+    
+    data = response.json()
+    return data.get("content", "")
 
 @app.post("/generate_mcq", response_model=MCQResponse)
 async def generate_mcq(request: VideoRequest):
@@ -81,7 +52,7 @@ async def generate_mcq(request: VideoRequest):
         text_content = get_transcript(video_id)
     except Exception as e:
         print("Transcript error:", e)
-        raise Exception("Failed to fetch transcript")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch transcript: {str(e)}")
     
 #     ytt_api = YouTubeTranscriptApi(
 #     proxy_config=WebshareProxyConfig(
